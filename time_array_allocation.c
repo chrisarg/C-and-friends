@@ -29,8 +29,11 @@ double time_allocation_and_initialization(size_t length, char initial_value) {
     /* This rudimentary loop prevents the compiler from optimizing out the 
      * allocation/initialization with the de-allocation
     */
-    for(size_t i = 0; i < length; i++) {
+    for(size_t i = 1; i < length; i++) {
        array[i]++;
+       if(i % 100000 == 0) {
+           printf("array[%zu] = %c\n", i, array[i]);
+       }
     }
     free(array); // Free the allocated memory
 
