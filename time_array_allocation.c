@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
 /*
 Compilation command:
-gcc -o time_array_allocation time_array_allocation.c -std=c99
+gcc -O2 -o time_array_allocation time_array_allocation.c -std=c99
 
 Example invocation:
 ./time_array_allocation 10000000 A
