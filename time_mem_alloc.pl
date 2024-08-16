@@ -1,11 +1,33 @@
 #!/home/chrisarg/perl5/perlbrew/perls/current/bin/perl
 use v5.38;
-use Inline C => 'DATA';
+use Inline (
+    C         => 'DATA',
+    cc        => 'g++',
+    ld        => 'g++',
+    inc       => q{},      # replace q{} with anything else you need
+    ccflagsex => q{},      # replace q{} with anything else you need
+    lddlflags => join(
+        q{ },
+        $Config::Config{lddlflags},
+        q{ },              # replace q{ } with anything else you need
+    ),
+    libs => join(
+        q{ },
+        $Config::Config{libs},
+        q{ },              # replace q{ } with anything else you need
+    ),
+    myextlib => ''
+);
+
 use Benchmark qw(cmpthese);
-my $init_value      = 'A';
+use Getopt::Long;
+my ($buffer_size, $init_value, $iterations);
+GetOptions(
+    'buffer_size=i' => \$buffer_size,
+    'init_value=s'  => \$init_value,
+    'iterations=i'  => \$iterations,
+) or die "Usage: $0 --buffer_size <size> --init_value <value> --iterations <count>\n";
 my $init_value_byte = ord($init_value);
-my $buffer_size     = 100_000_000;
-my $iterations      = 100;
 my %code_snippets   = (
     'string' => sub {
         $init_value x ( $buffer_size - 1 );
@@ -39,5 +61,5 @@ SV* allocate_and_initialize_array(size_t length, short initial_value) {
 
     // Initialize each element with the initial_value
     memset(array, initial_value_byte, length);
-    return newSVuv(array);
+    return newSVuv(PTR2UV(array));
 }
