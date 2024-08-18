@@ -10,16 +10,22 @@ sleeptime=4
 sleep $sleeptime
 ./time_mem_alloc_driver.pl --buffer_size 1000000 --init_value A --iterations $iterations --csv_file $filename_avx512 --stump_fname $stumpfname_avx512 
 sleep $sleeptime
+./time_mem_alloc_driver.pl --buffer_size 100000 --init_value A --iterations $iterations --csv_file $filename_avx512 --stump_fname $stumpfname_avx512 
+sleep $sleeptime
 ./time_mem_alloc_driver.pl --buffer_size 100000000 --init_value A --iterations $iterations --csv_file $filename_avx512 --stump_fname $stumpfname_avx512 
 sleep $sleeptime
 ./time_mem_alloc_driver.pl --buffer_size 10000000 --init_value A --iterations $iterations --csv_file $filename_avx2 --stump_fname $stumpfname_avx2 
 sleep $sleeptime
 ./time_mem_alloc_driver.pl --buffer_size 1000000 --init_value A --iterations $iterations --csv_file $filename_avx2 --stump_fname $stumpfname_avx2 
 sleep $sleeptime
+./time_mem_alloc_driver.pl --buffer_size 100000 --init_value A --iterations $iterations --csv_file $filename_avx2 --stump_fname $stumpfname_avx2 
+sleep $sleeptime
 ./time_mem_alloc_driver.pl --buffer_size 100000000 --init_value A --iterations $iterations --csv_file $filename_avx2 --stump_fname $stumpfname_avx2 
 sleep $sleeptime
 ./time_mem_alloc_driver.pl --buffer_size 10000000 --init_value A --iterations $iterations --csv_file $filename --stump_fname $stumpfname 
 sleep $sleeptime
 ./time_mem_alloc_driver.pl --buffer_size 1000000 --init_value A --iterations $iterations --csv_file $filename --stump_fname $stumpfname 
+sleep $sleeptime
+./time_mem_alloc_driver.pl --buffer_size 100000 --init_value A --iterations $iterations --csv_file $filename --stump_fname $stumpfname 
 sleep $sleeptime
 ./time_mem_alloc_driver.pl --buffer_size 100000000 --init_value A --iterations $iterations --csv_file $filename --stump_fname $stumpfname 

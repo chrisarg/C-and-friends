@@ -4,7 +4,7 @@ library(ggplot2)
 library(viridisLite)
 # Load the data from C and Perl and Cbind them
 data <- rbindlist(list(
-  fread("Perl_alloc_results_avx2.csv")
+  fread("Perl_alloc_results_avx512.csv")
 ))
 data[, IPS := 1 / Time]
 
