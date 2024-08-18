@@ -1,0 +1,1 @@
+{"vars":[{"line":4,"containerName":"","kind":2,"name":"Inline"},{"kind":12,"name":"test_atomic","line":6}],"version":5}

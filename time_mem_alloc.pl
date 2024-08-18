@@ -1,11 +1,13 @@
 #!/home/chrisarg/perl5/perlbrew/perls/current/bin/perl
+## this script creates unfortunately dependency between the different allocators
+## it is used only to scrap code for the other scripts
 use v5.38;
 use Inline (
     C         => 'DATA',
     cc        => 'g++',
     ld        => 'g++',
     inc       => q{},      # replace q{} with anything else you need
-    ccflagsex => q{},      # replace q{} with anything else you need
+    ccflagsex => q{-march=native},      
     lddlflags => join(
         q{ },
         $Config::Config{lddlflags},
@@ -19,80 +21,154 @@ use Inline (
     myextlib => ''
 );
 
-use Benchmark::Dumb qw(cmpthese);
+use Time::HiRes     qw(time);
 use Convert::Scalar qw(grow);
 use Getopt::Long;
-my ($buffer_size, $init_value, $iterations);
+use Text::CSV;
+
+my ( $buffer_size, $init_value, $iterations, $csv_file );
 GetOptions(
     'buffer_size=i' => \$buffer_size,
     'init_value=s'  => \$init_value,
     'iterations=i'  => \$iterations,
-) or die "Usage: $0 --buffer_size <size> --init_value <value> --iterations <count>\n";
+    'csv_file=s'    => \$csv_file,
+  )
+  or die
+"Usage: $0 --buffer_size <size> --init_value <value> --iterations <count> --csv_file <file>\n";
 my $init_value_byte = ord($init_value);
 
-
-my %code_snippets   = (
-    'pack_dot' => sub {
-         pack( ".", $buffer_size );
+my %code_snippets = (
+    'pack_dot_zero' => {
+        language => 'Perl',
+        function => sub {
+            pack( ".", $buffer_size );
+        }
     },
-    'pack_x' => sub {
-       pack( "x$buffer_size" );
+    'pack_x_zero' => {
+        language => 'Perl',
+        function => sub {
+            pack("x$buffer_size");
+        }
     },
-    'grow' => sub {
-        my $str;
-        grow $str, $buffer_size;
+    'Newx' => {
+        language => 'PerlAPI',
+        function => sub {
+            my $str = alloc_with_Newx($buffer_size);
+        }
     },
-    'Newx'=> sub {
-        my $str = alloc_with_Newx( $buffer_size );
+    'Newxz_zero' => {
+        language => 'PerlAPI',
+        function => sub {
+            my $str = alloc_with_Newxz($buffer_size);
+        }
     },
-    'Newxz'=> sub {
-        my $str = alloc_with_Newxz( $buffer_size );
+    'C_malloc' => {
+        language => 'C',
+        function => sub {
+            alloc_with_malloc($buffer_size);
+        }
     },
-    'control' => sub {
-        my $str;
+    'C_calloc_zero' => {
+        language => 'C',
+        function => sub {
+            alloc_with_calloc($buffer_size);
+        }
     },
-    'C_malloc' => sub {
-        alloc_with_malloc( $buffer_size );
+    'string_set' => {
+        language => 'Perl',
+        function => sub {
+            my $str = $init_value x ( $buffer_size - 1 );
+        }
     },
-    'C_calloc' => sub {
-        alloc_with_calloc( $buffer_size );
+    'pack_set' => {
+        language => 'Perl',
+        function => sub {
+            my $str = pack "C*", ( ($init_value_byte) x $buffer_size );
+        }
+    },
+    'vec_set' => {
+        language => 'Perl',
+        function => sub {
+            my $z = '';
+            vec( $z, $buffer_size - 1, 8 ) = $init_value_byte;
+            $z = '';
+        }
+    },
+    'Newx_set' => {
+        language => 'PerlAPI',
+        function => sub {
+            my $str = alloc_with_Newx_and_set( $buffer_size, $init_value_byte );
+        }
+    },
+    'Newxz_set' => {
+        language => 'PerlAPI',
+        function => sub {
+            my $str =
+              alloc_with_Newxz_and_set( $buffer_size, $init_value_byte );
+        }
+    },
+    'C_malloc_and_set' => {
+        language => 'C',
+        function => sub {
+            my $str =
+              alloc_with_malloc_and_set( $buffer_size, $init_value_byte );
+        }
+    },
+    'C_calloc_and_set' => {
+        language => 'C',
+        function => sub {
+            my $str =
+              alloc_with_calloc_and_set( $buffer_size, $init_value_byte );
+        }
     },
 );
-say "Functions that allocate memory without initializing it to a user defined value";
-cmpthese( $iterations, \%code_snippets );
 
-undef %code_snippets;
+my $file_exists = -e $csv_file;
+my $csv         = Text::CSV->new( { binary => 1, eol => $/ } );
+open my $fh, ">>", $csv_file or die "Could not open '$csv_file' $!\n";
 
-my %code_snippets_with_set   = (
-    'string' => sub {
-        $init_value x ( $buffer_size - 1 );
-    },
-    'pack' => sub {
-        pack "C*", ( ($init_value_byte) x $buffer_size );
-    },
-    'vec' => sub {
-        my $z = ''; 
-        vec($z, $buffer_size - 1, 8) = $init_value_byte; 
-        $z = '';
-    },
-    'Newx_set'=> sub {
-        my $str = alloc_with_Newx_and_set( $buffer_size, $init_value_byte );
-    },
-    'Newxz_set'=> sub {
-        my $str = alloc_with_Newxz_and_set( $buffer_size, $init_value_byte );
-    },
-    'control' => sub {
-        my $str;
-    },
-    'C_malloc_and_set' => sub {
-        alloc_with_malloc_and_set( $buffer_size, $init_value_byte );
-    },
-    'C_calloc_and_Set' => sub {
-        alloc_with_calloc_and_set( $buffer_size, $init_value_byte );
-    },
-);
-say "Functions that allocate memory and initialize it to a user defined value";
-cmpthese( $iterations, \%code_snippets_with_set );
+# Write header if the file is newly created
+unless ($file_exists) {
+    $csv->print( $fh,
+        [ "Language", "Operation", "Iteration", "Time", "Length" ] );
+}
+
+sub benchmark_code {
+    my ( $code_ref, $operation ) = @_;
+    my $start_time = time();
+    $code_ref->();
+    my $end_time     = time();
+    my $elapsed_time = $end_time - $start_time;
+    return $elapsed_time;
+}
+
+while ( my ( $operation, $property ) = each %code_snippets ) {
+    for my $i ( 1 .. $iterations ) {
+        my $elapsed_time = benchmark_code( $property->{function}, $operation );
+        $csv->print(
+            $fh,
+            [
+                $property->{language}, $operation, $i,
+                $elapsed_time,         $buffer_size
+            ]
+        );
+    }
+}
+
+close $fh;
+
+=begin comment
+
+This is a coderef for the grow subroutine which has amazing performance for 
+unclear reasons
+
+'grow' => sub {
+    my $str;
+    grow $str, $buffer_size;
+},
+=end comment
+
+=cut
 
 __DATA__
 
@@ -147,7 +223,7 @@ SV* alloc_with_calloc_and_set(size_t length, short initial_value) {
     }
 
     // Initialize each element with the initial_value
-    //memset(array, initial_value_byte, length);
+    memset(array, initial_value_byte, length);
     return newSVuv(PTR2UV(array));
 }
 
@@ -178,49 +254,3 @@ SV* alloc_with_Newxz_and_set(size_t length, short initial_value) {
     memset(array, initial_value_byte, length);
     return newSVuv(PTR2UV(array));
 }
-
-
-// dumped perl code as a comment
-/*
-my %code_snippets   = (
-    'string' => sub {
-        $init_value x ( $buffer_size - 1 );
-    },
-    'pack' => sub {
-        pack "C*", ( ($init_value_byte) x $buffer_size );
-    },
-    'pack_dot' => sub {
-         pack( ".", $buffer_size );
-    },
-    'pack_x' => sub {
-       pack( "x$buffer_size" );
-    },
-    'vec' => sub {
-        my $z = ''; 
-        vec($z, $buffer_size - 1, 8) = $init_value_byte; 
-        $z = '';
-    },
-    'grow' => sub {
-        my $str;
-        grow $str, $buffer_size;
-    },
-    'Newx'=> sub {
-        my $str = alloc_with_Newx( $buffer_size, $init_value_byte );
-    },
-    'Newxz'=> sub {
-        my $str = alloc_with_Newxz( $buffer_size, $init_value_byte );
-    },
-    'control' => sub {
-        my $str;
-    },
-    'C_malloc' => sub {
-        alloc_with_malloc( $buffer_size, $init_value_byte );
-    },
-    'C_malloc_and_set' => sub {
-        alloc_with_malloc_and_set( $buffer_size, $init_value_byte );
-    },
-    'C_calloc' => sub {
-        alloc_with_calloc( $buffer_size, $init_value_byte );
-    },
-);
-*/
