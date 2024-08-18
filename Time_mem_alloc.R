@@ -24,7 +24,7 @@ ggplot(data[], aes(x = Length, y = IPS, color = Operation)) +
   scale_y_log10() +
   theme_minimal() +
   theme(legend.position = "top") +
-  labs(x = "Iteration", y = "Buffers Per Second (IPS)", color = "Allocation Type") +
+  labs(x = "Buffer Length (bytes)", y = "Buffers Per Second (IPS)", color = "Allocation Type") +
   ggtitle("Benchmark for Buffer Generations C/Perl ") +
   facet_grid(Init~Language)+
   scale_color_discrete(type=viridis(num_of_colors,option="H"))+
