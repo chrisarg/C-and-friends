@@ -110,6 +110,23 @@ SV* alloc_with_malloc(size_t length) {
 
     return newSVuv(PTR2UV(array));
 }
+SV* alloc_with_malloc_touch(size_t length, short initial_value) {
+    // Allocate memory for the array
+    char* array = (char*)malloc(length * sizeof(char));
+    if (array == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    /*
+    * Touch every 4K
+        size_t touch_length = length / (4*1024);
+        for (size_t i = 0; i < length; i += touch_length) {
+            array[i] = (char)initial_value;
+        }
+    */ 
+    array[length-1] = (char)initial_value;
+    return newSVuv(PTR2UV(array));
+}
 
 SV* alloc_with_malloc_and_set(size_t length, short initial_value) {
     // Allocate memory for the array
@@ -132,6 +149,25 @@ SV* alloc_with_calloc(size_t length) {
         fprintf(stderr, "Memory allocation failed\n");
         exit(1);
     }
+    return newSVuv(PTR2UV(array));
+}
+
+SV* alloc_with_calloc_touch(size_t length, short initial_value) {
+    // Allocate memory for the array
+    char* array = (char *)calloc(length ,sizeof(char));
+    if (array == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    /*
+    * Touch every 4K
+        size_t touch_length = length / (4*1024);
+        for (size_t i = 0; i < length; i += touch_length) {
+            array[i] = (char)initial_value;
+        }
+    */ 
+    array[length-1] = (char)initial_value;
+
     return newSVuv(PTR2UV(array));
 }
 
@@ -158,6 +194,20 @@ SV* alloc_with_Newx(size_t length) {
 SV* alloc_with_Newxz(size_t length) {
     char* array ;
     Newxz(array, length, char);
+    return newSVuv(PTR2UV(array));
+}
+
+SV* alloc_with_Newx_touch(size_t length,short initial_value) {
+    char* array ;
+    Newx(array, length, char);
+    array[length-1] = (char)initial_value;
+    return newSVuv(PTR2UV(array));
+}
+
+SV* alloc_with_Newxz_touch(size_t length,short initial_value) {
+    char* array ;
+    Newxz(array, length, char);
+    array[length-1] = (char)initial_value;
     return newSVuv(PTR2UV(array));
 }
 

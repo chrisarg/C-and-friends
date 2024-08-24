@@ -20,7 +20,8 @@ data[, Init := ifelse(grepl("set", Operation),
 
 num_of_colors = nlevels(factor(data$Operation))
 ggplot(data[], aes(x = Length, y = IPS, color = Operation)) +
-  geom_boxplot(outlier.shape = 1,outlier.size = 0.5)+
+  geom_point(position=position_dodge2(width=1))+
+ # scale_x_log10()+
   scale_y_log10() +
   theme_minimal() +
   theme(legend.position = "top") +

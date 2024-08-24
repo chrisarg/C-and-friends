@@ -1,6 +1,7 @@
 #!/home/chrisarg/perl5/perlbrew/perls/current/bin/perl
 ## this is a driver script that will test work flows of serial allocations
-## using various approaches from within Perl and C
+## using various approaches from within Perl and C. This one is limited to
+## using only Newx, Newxz, malloc and their touch versions
 use v5.38;
 use Getopt::Long;
 use File::Temp qw(tempfile);
@@ -20,18 +21,7 @@ GetOptions(
 my $init_value_byte = ord($init_value);
 
 my %code_snippets = (
-    'pack_dot_zero' => {
-        language => 'Perl',
-        function => q{
-           my $str =  pack( ".", $buffer_size );
-        }
-    },
-    'pack_x_zero' => {
-        language => 'Perl',
-        function => q{
-            my $str = pack("x$buffer_size");
-        }
-    },
+
     'Newx' => {
         language => 'PerlAPI',
         function => q{
@@ -56,74 +46,6 @@ my %code_snippets = (
             my $str = alloc_with_malloc_touch($buffer_size,$init_value_byte);
         }
     },
-    'C_calloc_zero_touch' => {
-        language => 'C',
-        function => q{
-            my $str = alloc_with_calloc_touch($buffer_size,$init_value_byte);
-        }
-    },
-    'C_calloc_zero' => {
-        language => 'C',
-        function => q{
-            my $str = alloc_with_calloc($buffer_size);
-        }
-    },
-    'string_set' => {
-        language => 'Perl',
-        function => q{
-            my $str = $init_value x ( $buffer_size - 1 );
-        }
-    },
-    'pack_set' => {
-        language => 'Perl',
-        function => q{
-            my $str = pack "C*", ( ($init_value_byte) x $buffer_size );
-        }
-    },
-    'grow' => {
-        language => 'Perl',
-        function => q {
-            my $str;
-            grow $str, $buffer_size;
-        }
-    },
-    'grow_set' => {
-        language => 'Perl',
-        function => q {
-            my $str;
-            grow $str, $buffer_size;
-            vec( $str, $buffer_size - 1, 8 ) = $init_value_byte;
-        }
-    },
-    'grow_touch' => {
-        language => 'Perl',
-        function => q {
-            my $str;
-            grow $str, $buffer_size;
-            vec( $str, 0, 8 ) = $init_value_byte;
-        }
-    },
-    'vec_set' => {
-        language => 'Perl',
-        function => q{
-            my $z = '';
-            vec( $z, $buffer_size - 1, 8 ) = $init_value_byte;
-            $z = '';
-        }
-    },
-    'Newx_set' => {
-        language => 'PerlAPI',
-        function => q{
-            my $str = alloc_with_Newx_and_set( $buffer_size, $init_value_byte );
-        }
-    },
-    'Newxz_set' => {
-        language => 'PerlAPI',
-        function => q{
-            my $str =
-              alloc_with_Newxz_and_set( $buffer_size, $init_value_byte );
-        }
-    },
     'Newx_touch' => {
         language => 'PerlAPI',
         function => q{
@@ -135,20 +57,6 @@ my %code_snippets = (
         function => q{
             my $str =
               alloc_with_Newxz_touch( $buffer_size, $init_value_byte );
-        }
-    },
-    'C_malloc_and_set' => {
-        language => 'C',
-        function => q{
-            my $str =
-              alloc_with_malloc_and_set( $buffer_size, $init_value_byte );
-        }
-    },
-    'C_calloc_and_set' => {
-        language => 'C',
-        function => q{
-            my $str =
-              alloc_with_calloc_and_set( $buffer_size, $init_value_byte );
         }
     },
 );
