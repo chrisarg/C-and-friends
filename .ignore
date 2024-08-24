@@ -40,5 +40,6 @@ Thumbs.db
 # Directories
 #####################
 _Inline/
-.vscode/
 
+# Ignore all hidden directories
+.*/
